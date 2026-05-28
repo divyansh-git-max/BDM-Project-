@@ -1,0 +1,65 @@
+/* style.css */
+/* Global reset & font */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #e8eaf6);
+  color: #2c3e50;
+  line-height: 1.6;
+}
+/* Dark mode variables */
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(135deg, #1e1e2f, #2c2c44);
+  --text-color: #f0f0f0;
+  --card-bg: rgba(255, 255, 255, 0.1);
+  --card-border: rgba(255, 255, 255, 0.2);
+}
+[data-theme="light"] {
+  --bg-gradient: linear-gradient(135deg, #f0f4ff, #e8eaf6);
+  --text-color: #2c3e50;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(0, 0, 0, 0.1);
+}
+body {
+  background: var(--bg-gradient);
+  color: var(--text-color);
+}
+/* Hero */
+.hero-section {
+  background: var(--card-bg);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  border: 1px solid var(--card-border);
+}
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: transform 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+/* Dark mode toggle button */
+#themeToggle {
+  border: 2px solid var(--text-color);
+  color: var(--text-color);
+}
+/* Footer */
+footer {
+  background: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+}

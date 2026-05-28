@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bakery Analytics — BDM Capstone Project</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍞</text></svg>" />
+  <meta name="description" content="BDM Capstone Project: Optimizing Customer Purchases and Sales Forecasting for The Bread Basket Bakery, Edinburgh — IIT Madras." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Libraries -->
+  <script src="https://cdn.plot.ly/plotly-2.29.1.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    /* ══════════════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════════════ */
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #0f0f1a;
+      --bg3: #141428;
+      --surface: rgba(255,255,255,0.04);
+      --surface-hover: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.08);
+      --border-bright: rgba(255,255,255,0.15);
+      --accent: #f97316;
+      --accent2: #fb923c;
+      --accent3: #fbbf24;
+      --purple: #a855f7;
+      --blue: #3b82f6;
+      --green: #22c55e;
+      --text: #f1f5f9;
+      --text2: #94a3b8;
+      --text3: #475569;
+      --glow: 0 0 40px rgba(249,115,22,0.2);
+      --card-shadow: 0 4px 32px rgba(0,0,0,0.4);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    /* ══════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: rgba(249,115,22,0.3); }
+
+    /* ══════════════════════════════════════════════
+       SCROLLBAR
+    ══════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+    /* ══════════════════════════════════════════════
+       NAV
+    ══════════════════════════════════════════════ */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem;
+      backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(10,10,15,0.8);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1.1rem; font-weight: 700; text-decoration: none; color: var(--text);
+    }
+    .nav-logo-icon {
+      width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent3));
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      color: var(--text2); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    .nav-badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      color: white; font-size: 0.75rem; font-weight: 600;
+      padding: 0.3rem 0.8rem; border-radius: 20px; text-decoration: none;
+    }
+
+    /* ══════════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════ */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      padding: 6rem 2rem 4rem;
+      text-align: center;
+    }
+
+    /* Animated gradient background */
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(249,115,22,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168,85,247,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 30% at 20% 70%, rgba(59,130,246,0.06) 0%, transparent 40%);
+      animation: heroGlow 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroGlow {
+      0% { opacity: 0.8; }
+      100% { opacity: 1.2; }
+    }
+
+    /* Grid texture */
+    .hero::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .hero-content { position: relative; z-index: 2; max-width: 860px; }
+
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.3);
+      color: var(--accent2); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em;
+      padding: 0.4rem 1rem; border-radius: 20px;
+      margin-bottom: 1.8rem;
+      opacity: 0; transform: translateY(20px);
+    }
+    .hero-tag::before { content: '●'; font-size: 0.5rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 5rem);
+      font-weight: 900; line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+      opacity: 0; transform: translateY(30px);
+    }
+
+    .hero h1 .accent-text {
+      background: linear-gradient(135deg, var(--accent), var(--accent3), #f59e0b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-desc {
+      font-size: clamp(1rem, 2vw, 1.2rem); color: var(--text2);
+      max-width: 640px; margin: 0 auto 2.5rem;
+      opacity: 0; transform: translateY(20px);
+    }
+
+    .hero-cta {
+      display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+      opacity: 0; transform: translateY(20px);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.8rem 1.8rem; border-radius: 10px;
+      font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      color: white; box-shadow: 0 4px 20px rgba(249,115,22,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(249,115,22,0.5); }
+
+    .btn-ghost {
+      background: var(--surface); border: 1px solid var(--border-bright);
+      color: var(--text2);
+    }
+    .btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
+
+    /* Floating stats */
+    .hero-stats {
+      display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;
+      margin-top: 3.5rem; opacity: 0;
+    }
+
+    .stat-chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.5rem;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s;
+    }
+    .stat-chip:hover { border-color: var(--border-bright); transform: translateY(-3px); }
+    .stat-chip .val {
+      font-size: 1.8rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1;
+    }
+    .stat-chip .label { font-size: 0.8rem; color: var(--text2); margin-top: 0.3rem; }
+
+    /* ══════════════════════════════════════════════
+       SECTION LAYOUT
+    ══════════════════════════════════════════════ */
+    section { padding: 5rem 2rem; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .section-label {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 1rem;
+    }
+    .section-label::before { content: ''; width: 20px; height: 2px; background: var(--accent); }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; line-height: 1.2; letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      font-size: 1.05rem; color: var(--text2); max-width: 640px;
+      margin-bottom: 3rem;
+    }
+
+    /* ══════════════════════════════════════════════
+       PROBLEM SECTION
+    ══════════════════════════════════════════════ */
+    #problems { background: var(--bg2); }
+
+    .problems-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 1.5rem; margin-top: 2rem;
+    }
+
+    .problem-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem;
+      transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .problem-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .problem-card.p1::before { background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+    .problem-card.p2::before { background: linear-gradient(90deg, var(--purple), var(--blue)); }
+    .problem-card:hover { border-color: var(--border-bright); transform: translateY(-4px); box-shadow: var(--card-shadow); }
+
+    .problem-number {
+      font-size: 3rem; font-weight: 900; line-height: 1;
+      margin-bottom: 0.5rem; opacity: 0.15;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .p1 .problem-number { color: var(--accent); }
+    .p2 .problem-number { color: var(--purple); }
+
+    .problem-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.8rem; }
+    .problem-card p { font-size: 0.95rem; color: var(--text2); line-height: 1.7; }
+
+    .problem-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 1.2rem;
+    }
+    .p1 .problem-icon { background: rgba(249,115,22,0.15); }
+    .p2 .problem-icon { background: rgba(168,85,247,0.15); }
+
+    /* ══════════════════════════════════════════════
+       DATA OVERVIEW SECTION
+    ══════════════════════════════════════════════ */
+    #dataset { background: var(--bg); }
+
+    .dataset-grid {
+      display: grid; grid-template-columns: 2fr 1fr;
+      gap: 2rem; align-items: start;
+    }
+
+    .meta-table {
+      border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    }
+    .meta-table table { width: 100%; border-collapse: collapse; }
+    .meta-table th {
+      background: rgba(249,115,22,0.1); color: var(--accent2);
+      padding: 0.8rem 1.2rem; font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; text-align: left;
+    }
+    .meta-table td {
+      padding: 0.75rem 1.2rem; font-size: 0.9rem; color: var(--text2);
+      border-top: 1px solid var(--border);
+    }
+    .meta-table tr:hover td { background: var(--surface); color: var(--text); }
+    .badge-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; padding: 0.2rem 0.5rem;
+      border-radius: 4px; background: rgba(59,130,246,0.15);
+      color: var(--blue);
+    }
+
+    .stats-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 1.2rem 1.5rem;
+      transition: all 0.3s;
+    }
+    .stat-card:hover { border-color: var(--border-bright); }
+    .stat-card .s-val {
+      font-size: 1.6rem; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .stat-card .s-label { font-size: 0.8rem; color: var(--text2); margin-top: 0.3rem; }
+    .stat-card .s-sub { font-size: 0.75rem; color: var(--text3); margin-top: 0.2rem; }
+
+    /* ══════════════════════════════════════════════
+       CHARTS SECTION
+    ══════════════════════════════════════════════ */
+    #analysis { background: var(--bg2); }
+    #forecasting { background: var(--bg); }
+
+    .charts-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      transition: all 0.3s;
+    }
+    .chart-card:hover { border-color: var(--border-bright); box-shadow: var(--card-shadow); }
+    .chart-card.full-width { grid-column: 1 / -1; }
+
+    .chart-header { margin-bottom: 1rem; }
+    .chart-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .chart-subtitle { font-size: 0.83rem; color: var(--text2); }
+
+    .chart-plot { width: 100%; min-height: 320px; }
+
+    .findings-list {
+      margin-top: 1.2rem; list-style: none;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .findings-list li {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      font-size: 0.85rem; color: var(--text2); line-height: 1.5;
+    }
+    .findings-list li::before {
+      content: '▸'; color: var(--accent); flex-shrink: 0; margin-top: 0.1rem;
+    }
+
+    /* ══════════════════════════════════════════════
+       MODEL PERFORMANCE
+    ══════════════════════════════════════════════ */
+    #models { background: var(--bg2); }
+
+    .models-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem; margin-top: 2rem;
+    }
+
+    .model-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.8rem;
+      position: relative; overflow: hidden; transition: all 0.3s;
+    }
+    .model-card:hover { border-color: var(--border-bright); transform: translateY(-4px); box-shadow: var(--card-shadow); }
+    .model-card::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+    }
+    .model-card.sarimax::after { background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+    .model-card.xgboost::after { background: linear-gradient(90deg, var(--green), var(--blue)); }
+    .model-card.prophet::after { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+    .model-card.monte::after { background: linear-gradient(90deg, var(--purple), var(--accent)); }
+
+    .model-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .model-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .model-desc { font-size: 0.85rem; color: var(--text2); line-height: 1.6; margin-bottom: 1.2rem; }
+
+    .model-metrics { display: flex; flex-direction: column; gap: 0.5rem; }
+    .metric-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.82rem;
+    }
+    .metric-key { color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+    .metric-val { font-weight: 600; color: var(--text); }
+    .metric-good { color: var(--green); }
+
+    /* ══════════════════════════════════════════════
+       RECOMMENDATIONS SECTION
+    ══════════════════════════════════════════════ */
+    #recommendations { background: var(--bg); }
+
+    .rec-tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 2rem;
+    }
+    .rec-tab {
+      padding: 0.6rem 1.4rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface);
+      color: var(--text2); transition: all 0.2s;
+    }
+    .rec-tab.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      color: white; border-color: transparent;
+    }
+
+    .rec-panel { display: none; }
+    .rec-panel.active { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; }
+
+    .rec-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 1.4rem;
+      transition: all 0.3s;
+    }
+    .rec-card:hover { border-color: var(--border-bright); }
+    .rec-num {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--accent); margin-bottom: 0.6rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .rec-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .rec-card p { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+
+    /* ══════════════════════════════════════════════
+       ASSOCIATION NETWORK (SVG visual)
+    ══════════════════════════════════════════════ */
+    .assoc-container {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    /* ══════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════ */
+    footer {
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 2rem; text-align: center;
+    }
+    .footer-content { max-width: 600px; margin: 0 auto; }
+    .footer-logo { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .footer-logo span {
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .footer-sub { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+    .footer-links { display: flex; gap: 1.5rem; justify-content: center; margin-top: 1rem; }
+    .footer-links a { font-size: 0.82rem; color: var(--text3); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--accent); }
+
+    /* ══════════════════════════════════════════════
+       LOADING OVERLAY
+    ══════════════════════════════════════════════ */
+    #loader {
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--bg); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1.5rem;
+      transition: opacity 0.6s, visibility 0.6s;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; }
+
+    .loader-icon { font-size: 2.5rem; animation: spin 1.5s linear infinite; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    .loader-text { font-size: 1rem; color: var(--text2); }
+    .loader-bar {
+      width: 200px; height: 3px; background: var(--surface);
+      border-radius: 2px; overflow: hidden;
+    }
+    .loader-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      border-radius: 2px;
+      animation: loadFill 1.8s ease-out forwards;
+    }
+    @keyframes loadFill { from{width:0} to{width:100%} }
+
+    /* ══════════════════════════════════════════════
+       MONTE CARLO EXTRAS
+    ══════════════════════════════════════════════ */
+    .mc-legend {
+      display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem;
+    }
+    .mc-legend-item {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-size: 0.8rem; color: var(--text2);
+    }
+    .mc-legend-line {
+      width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0;
+    }
+    .mc-legend-band {
+      width: 24px; height: 12px; border-radius: 3px; flex-shrink: 0;
+    }
+
+    .mc-stats-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem; margin-top: 1.2rem;
+    }
+    .mc-stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.75rem 1rem;
+      text-align: center;
+    }
+    .mc-stat-val {
+      font-size: 1.25rem; font-weight: 800; line-height: 1;
+    }
+    .mc-stat-label {
+      font-size: 0.72rem; color: var(--text2); margin-top: 0.25rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .mc-stat-val.orange {
+      background: linear-gradient(135deg,#f97316,#fbbf24);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .mc-stat-val.purple { color: #a855f7; }
+    .mc-stat-val.blue   { color: #3b82f6; }
+    .mc-stat-val.green  { color: #22c55e; }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.2rem; }
+      .nav-links { display: none; }
+      .problems-grid { grid-template-columns: 1fr; }
+      .dataset-grid { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card.full-width { grid-column: auto; }
+      .hero h1 { font-size: 2.2rem; }
+      section { padding: 3.5rem 1.2rem; }
+      .hero-stats { gap: 0.8rem; }
+      .stat-chip { padding: 0.8rem 1rem; }
+      .stat-chip .val { font-size: 1.4rem; }
+      .models-grid { grid-template-columns: 1fr 1fr; }
+      .meta-table td, .meta-table th { padding: 0.6rem 0.75rem; font-size: 0.82rem; }
+      .mc-stats-strip { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.75rem; }
+      .hero-stats { flex-direction: column; align-items: center; }
+      .models-grid { grid-template-columns: 1fr; }
+      .rec-panel.active { grid-template-columns: 1fr; }
+      .mc-stats-strip { grid-template-columns: repeat(2, 1fr); }
+      .mc-legend { gap: 0.6rem; }
+      .footer-links { flex-wrap: wrap; gap: 0.75rem; }
+      .btn { padding: 0.7rem 1.2rem; font-size: 0.88rem; }
+      section { padding: 2.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADER -->
+  <div id="loader">
+    <div class="loader-icon">🥐</div>
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+    <p class="loader-text">Loading analytics…</p>
+  </div>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">
+      <span class="nav-logo-icon">🍞</span>
+      Bakery Analytics
+    </a>
+    <ul class="nav-links">
+      <li><a href="#problems">Problems</a></li>
+      <li><a href="#dataset">Dataset</a></li>
+      <li><a href="#analysis">Analysis</a></li>
+      <li><a href="#forecasting">Forecasting</a></li>
+      <li><a href="#recommendations">Recommendations</a></li>
+    </ul>
+    <a href="https://www.kaggle.com/datasets/akashdeepkuila/bakery/data" target="_blank" class="nav-badge">📊 Dataset</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- HERO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <div class="hero-tag">IIT Madras · BDM Capstone Project · 22f3002342</div>
+
+      <h1>
+        Optimizing <span class="accent-text">Customer Purchases</span><br />
+        &amp; Sales Forecasting<br />
+        <span style="font-size: 0.7em; font-weight: 600; color: var(--text2);">for The Bread Basket, Edinburgh</span>
+      </h1>
+
+      <p class="hero-desc">
+        A data-driven analysis of 9,465 transactions spanning Oct 2016 – Apr 2017.
+        Using Market Basket Analysis, SARIMAX, XGBoost, Prophet & Monte Carlo Simulation to uncover growth opportunities.
+      </p>
+
+      <div class="hero-cta">
+        <a href="#analysis" class="btn btn-primary">📈 Explore Analysis</a>
+        <a href="#recommendations" class="btn btn-ghost">💡 View Recommendations</a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-chip">
+          <div class="val">9,465</div>
+          <div class="label">Total Transactions</div>
+        </div>
+        <div class="stat-chip">
+          <div class="val">20,507</div>
+          <div class="label">Item Records</div>
+        </div>
+        <div class="stat-chip">
+          <div class="val">94</div>
+          <div class="label">Unique Products</div>
+        </div>
+        <div class="stat-chip">
+          <div class="val">2.16</div>
+          <div class="label">Avg Basket Size</div>
+        </div>
+        <div class="stat-chip">
+          <div class="val">163d</div>
+          <div class="label">Data Period</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- BUSINESS PROBLEMS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="problems">
+    <div class="container">
+      <div class="section-label">Business Problems</div>
+      <h2 class="section-title">Two Core Challenges Identified</h2>
+      <p class="section-desc">
+        Analysis of transactional data at The Bread Basket revealed two distinct operational and revenue problems that data science can directly address.
+      </p>
+
+      <div class="problems-grid">
+        <div class="problem-card p1">
+          <div class="problem-icon">🛒</div>
+          <div class="problem-number">01</div>
+          <h3>Low Average Basket Size</h3>
+          <p>
+            Most customers purchase only 1–2 items per visit, with an average basket size of just 2.16 items and a median of 2.0.
+            Over 3,352 transactions consist of a single item, indicating massive missed revenue opportunities per transaction.
+            The dominance of single-item purchases — despite natural item affinity patterns — suggests that cross-selling
+            and bundling strategies are entirely underutilised at the point of sale.
+          </p>
+        </div>
+
+        <div class="problem-card p2">
+          <div class="problem-icon">📉</div>
+          <div class="problem-number">02</div>
+          <h3>Sales Variability &amp; Operational Inefficiency</h3>
+          <p>
+            Significant day-to-day and week-to-week variability in sales leads to inefficiencies in staffing and inventory planning.
+            Weekend mornings (especially Saturday, 10 AM–2 PM) generate peak demand, while weekday evenings record near-zero sales —
+            yet the bakery remains open late until 1:00 AM during winter months. This mismatch between operational hours and
+            actual demand causes avoidable cost overruns and resource waste.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- DATASET -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="dataset">
+    <div class="container">
+      <div class="section-label">Dataset Overview</div>
+      <h2 class="section-title">The Bread Basket — Bakery Sales Data</h2>
+      <p class="section-desc">
+        Sourced from Kaggle, this dataset covers 163 days of real transactional data from a bakery in Edinburgh, Scotland.
+      </p>
+
+      <div class="dataset-grid">
+        <div class="meta-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Column</th>
+                <th>Data Type</th>
+                <th>Description</th>
+                <th>Values</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Transaction</strong></td>
+                <td><span class="badge-type">Integer</span></td>
+                <td>Unique ID per transaction</td>
+                <td>9,465 unique</td>
+              </tr>
+              <tr>
+                <td><strong>Item</strong></td>
+                <td><span class="badge-type">Categorical</span></td>
+                <td>Name of item sold</td>
+                <td>94 unique items</td>
+              </tr>
+              <tr>
+                <td><strong>date_time</strong></td>
+                <td><span class="badge-type">Timestamp</span></td>
+                <td>Date &amp; time of transaction</td>
+                <td>Oct 2016 – Apr 2017</td>
+              </tr>
+              <tr>
+                <td><strong>period_day</strong></td>
+                <td><span class="badge-type">Categorical</span></td>
+                <td>Time block of day</td>
+                <td>Morning / Afternoon / Evening / Night</td>
+              </tr>
+              <tr>
+                <td><strong>weekday_weekend</strong></td>
+                <td><span class="badge-type">Categorical</span></td>
+                <td>Type of day</td>
+                <td>Weekday / Weekend</td>
+              </tr>
+              <tr>
+                <td><strong>Basket_Size</strong></td>
+                <td><span class="badge-type">Engineered</span></td>
+                <td>Items per transaction (derived)</td>
+                <td>Min 1, Max 11, Mean 2.16</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="stats-sidebar">
+          <div class="stat-card">
+            <div class="s-val">20,507</div>
+            <div class="s-label">Total Rows</div>
+            <div class="s-sub">No null values, no duplicates</div>
+          </div>
+          <div class="stat-card">
+            <div class="s-val">Coffee</div>
+            <div class="s-label">Most Sold Item</div>
+            <div class="s-sub">5,471 times sold (26.7%)</div>
+          </div>
+          <div class="stat-card">
+            <div class="s-val">Afternoon</div>
+            <div class="s-label">Peak Period</div>
+            <div class="s-sub">11,569 transactions</div>
+          </div>
+          <div class="stat-card">
+            <div class="s-val">Weekday</div>
+            <div class="s-label">Dominant Day Type</div>
+            <div class="s-sub">12,807 vs 7,700 weekend</div>
+          </div>
+          <div class="stat-card">
+            <div class="s-val">SD 1.30</div>
+            <div class="s-label">Basket Size Std Dev</div>
+            <div class="s-sub">75th percentile is just 3 items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- ANALYSIS: MARKET BASKET -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="analysis">
+    <div class="container">
+      <div class="section-label">Problem 1 — Market Basket Analysis</div>
+      <h2 class="section-title">Apriori Algorithm &amp; Association Rules</h2>
+      <p class="section-desc">
+        Market Basket Analysis using the Apriori algorithm was applied with min support 0.02, confidence ≥ 0.1, and lift ≥ 0.5 to discover item co-purchase patterns.
+      </p>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Top 15 Most Sold Items</div>
+            <div class="chart-subtitle">Item frequency across all 9,465 transactions</div>
+          </div>
+          <div class="chart-plot" id="chart-top-items"></div>
+          <ul class="findings-list">
+            <li>Coffee is the dominant anchor product — sold 5,471 times, far ahead of all others.</li>
+            <li>Steep drop-off after Bread and Tea indicates that most revenue is concentrated in 3–4 items.</li>
+            <li>These high-frequency items are ideal anchors for designing combo deals.</li>
+          </ul>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Basket Size Distribution</div>
+            <div class="chart-subtitle">How many items customers buy per transaction</div>
+          </div>
+          <div class="chart-plot" id="chart-basket-dist"></div>
+          <ul class="findings-list">
+            <li>3,352 transactions (35.4%) consist of only a single item — largest group.</li>
+            <li>75th percentile is just 3 items, confirming highly skewed low basket behaviour.</li>
+            <li>Baskets with 6+ items are extremely rare, representing untapped revenue potential.</li>
+          </ul>
+        </div>
+
+        <div class="chart-card full-width">
+          <div class="chart-header">
+            <div class="chart-title">Top Item Associations — Lift Values (Apriori Rules)</div>
+            <div class="chart-subtitle">Higher lift = stronger likelihood of being purchased together. Min support 2%, confidence ≥ 10%</div>
+          </div>
+          <div class="chart-plot" id="chart-associations"></div>
+          <ul class="findings-list" style="columns:2; gap:1.5rem; display:block;">
+            <li style="display:flex;gap:0.5rem;margin-bottom:0.5rem;"><span style="color:var(--accent)">▸</span> Coffee → Toast: Lift <strong>1.47</strong> — strongest pairing</li>
+            <li style="display:flex;gap:0.5rem;margin-bottom:0.5rem;"><span style="color:var(--accent)">▸</span> Tea → Cake: Lift <strong>1.60</strong> — highest in dataset</li>
+            <li style="display:flex;gap:0.5rem;margin-bottom:0.5rem;"><span style="color:var(--accent)">▸</span> Coffee → Medialuna: Lift <strong>1.19</strong></li>
+            <li style="display:flex;gap:0.5rem;margin-bottom:0.5rem;"><span style="color:var(--accent)">▸</span> Coffee → Pastry: Lift <strong>1.15</strong></li>
+            <li style="display:flex;gap:0.5rem;margin-bottom:0.5rem;"><span style="color:var(--accent)">▸</span> Coffee → Cake: Lift <strong>1.10</strong></li>
+            <li style="display:flex;gap:0.5rem;margin-bottom:0.5rem;"><span style="color:var(--accent)">▸</span> Bread → Tea: Lift <strong>0.60</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- ANALYSIS: SALES PATTERNS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="forecasting">
+    <div class="container">
+      <div class="section-label">Problem 2 — Sales Forecasting</div>
+      <h2 class="section-title">Time Series Analysis &amp; Demand Forecasting</h2>
+      <p class="section-desc">
+        SARIMAX, XGBoost, Facebook Prophet, and Monte Carlo Simulation were applied to understand and predict daily sales variability.
+      </p>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Weekly Sales Pattern</div>
+            <div class="chart-subtitle">Total items sold by day of week</div>
+          </div>
+          <div class="chart-plot" id="chart-weekly"></div>
+          <ul class="findings-list">
+            <li>Saturday has the highest sales — peak customer engagement day.</li>
+            <li>Monday–Wednesday see lowest demand — quiet start after weekend.</li>
+            <li>Consistent weekly cycle enables reliable demand-based staffing.</li>
+          </ul>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Sales by Period of Day</div>
+            <div class="chart-subtitle">Transaction volume by time block</div>
+          </div>
+          <div class="chart-plot" id="chart-period"></div>
+          <ul class="findings-list">
+            <li>Afternoon is the peak period with 11,569 transactions.</li>
+            <li>Morning is the second busiest — coffee and pastry driven.</li>
+            <li>Evening and Night are severely underutilised, especially in winter months.</li>
+          </ul>
+        </div>
+
+        <div class="chart-card full-width">
+          <div class="chart-header">
+            <div class="chart-title">🎲 Simulated Daily Demand — Monte Carlo (200 runs · 30-Day Horizon)</div>
+            <div class="chart-subtitle">Probabilistic demand forecast built from real historical sales distribution (Oct 2016 – Apr 2017)</div>
+          </div>
+
+          <!-- Custom legend -->
+          <div class="mc-legend">
+            <div class="mc-legend-item">
+              <div class="mc-legend-line" style="background:rgba(249,115,22,1);"></div>
+              Median forecast (P50)
+            </div>
+            <div class="mc-legend-item">
+              <div class="mc-legend-line" style="background: repeating-linear-gradient(90deg, rgba(168,85,247,0.9) 0, rgba(168,85,247,0.9) 6px, transparent 6px, transparent 10px);"></div>
+              P95 — Buffer stock line
+            </div>
+            <div class="mc-legend-item">
+              <div class="mc-legend-band" style="background:rgba(249,115,22,0.18);border:1px solid rgba(249,115,22,0.3);"></div>
+              IQR band (25th–75th %)
+            </div>
+            <div class="mc-legend-item">
+              <div class="mc-legend-band" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);"></div>
+              90% confidence band
+            </div>
+            <div class="mc-legend-item">
+              <div class="mc-legend-line" style="background:rgba(34,197,94,0.7);"></div>
+              Historical mean
+            </div>
+            <div class="mc-legend-item">
+              <div class="mc-legend-line" style="background:rgba(148,163,184,0.2);"></div>
+              Individual simulation paths
+            </div>
+          </div>
+
+          <div class="chart-plot" id="chart-montecarlo" style="min-height:420px;"></div>
+
+          <!-- Live stat strip (populated by JS) -->
+          <div class="mc-stats-strip">
+            <div class="mc-stat">
+              <div class="mc-stat-val orange" id="mc-stat-mean">—</div>
+              <div class="mc-stat-label">📍 Median Daily Demand</div>
+            </div>
+            <div class="mc-stat">
+              <div class="mc-stat-val purple" id="mc-stat-p95">—</div>
+              <div class="mc-stat-label">⚠ P95 Buffer Threshold</div>
+            </div>
+            <div class="mc-stat">
+              <div class="mc-stat-val blue" id="mc-stat-min">—</div>
+              <div class="mc-stat-label">📉 P5 Low-demand Floor</div>
+            </div>
+            <div class="mc-stat">
+              <div class="mc-stat-val green" id="mc-stat-risk">—</div>
+              <div class="mc-stat-label">📈 Upside Risk (P95 vs P50)</div>
+            </div>
+          </div>
+
+          <ul class="findings-list" style="margin-top:1.2rem;">
+            <li>The <strong>orange band</strong> (IQR) shows the most likely demand range — your normal operating window.</li>
+            <li>The <strong>purple dashed line</strong> (P95) is the buffer stock threshold — stock at this level to cover 95% of demand scenarios.</li>
+            <li>Shaded weekend columns (every 7 days) highlight where weekly demand spikes typically occur.</li>
+            <li>200 simulation paths were run using Box-Muller sampling from real historical sales distribution.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- MODEL PERFORMANCE -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="models">
+    <div class="container">
+      <div class="section-label">Forecasting Models</div>
+      <h2 class="section-title">Model Performance Summary</h2>
+      <p class="section-desc">Four forecasting approaches were applied and evaluated for their effectiveness in capturing bakery demand patterns.</p>
+
+      <div class="models-grid">
+        <div class="model-card sarimax">
+          <div class="model-icon">📊</div>
+          <div class="model-name">SARIMAX</div>
+          <div class="model-desc">
+            Seasonal AutoRegressive Integrated Moving Average with Exogenous variables.
+            Parameters (p,d,q)=(1,1,1) with seasonal order (1,1,1,7) optimised via AIC.
+            Captures weekly periodicity and autocorrelation.
+          </div>
+          <div class="model-metrics">
+            <div class="metric-row">
+              <span class="metric-key">Seasonal Period</span>
+              <span class="metric-val">7 days</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Order</span>
+              <span class="metric-val">(1,1,1)(1,1,1)</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Selection</span>
+              <span class="metric-val metric-good">AIC criterion</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="model-card xgboost">
+          <div class="model-icon">🤖</div>
+          <div class="model-name">XGBoost Regression</div>
+          <div class="model-desc">
+            Gradient boosted decision trees trained on calendar features: date, month, weekday, day-of-year.
+            Captures complex non-linear patterns and interactions between time features.
+          </div>
+          <div class="model-metrics">
+            <div class="metric-row">
+              <span class="metric-key">RMSE</span>
+              <span class="metric-val">20.95</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">R² Score</span>
+              <span class="metric-val metric-good">0.697</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">n_estimators</span>
+              <span class="metric-val">100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="model-card prophet">
+          <div class="model-icon">🔮</div>
+          <div class="model-name">Facebook Prophet</div>
+          <div class="model-desc">
+            Additive decomposition model designed for business time series with trend, seasonality,
+            and holiday effects. Provides interpretable forecasts with 95% confidence intervals.
+          </div>
+          <div class="model-metrics">
+            <div class="metric-row">
+              <span class="metric-key">RMSE</span>
+              <span class="metric-val">28.41</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">R² Score</span>
+              <span class="metric-val metric-good">0.60</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Confidence</span>
+              <span class="metric-val">95% intervals</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="model-card monte">
+          <div class="model-icon">🎲</div>
+          <div class="model-name">Monte Carlo Simulation</div>
+          <div class="model-desc">
+            Probabilistic uncertainty quantification using random sampling from historical sales distributions.
+            Builds on SARIMAX forecast to model 30-day demand scenarios and estimate risk.
+          </div>
+          <div class="model-metrics">
+            <div class="metric-row">
+              <span class="metric-key">Mean Demand</span>
+              <span class="metric-val">~105–110/day</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Horizon</span>
+              <span class="metric-val">30 days</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-key">Use Case</span>
+              <span class="metric-val metric-good">Buffer stock</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- RECOMMENDATIONS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section id="recommendations">
+    <div class="container">
+      <div class="section-label">Data-Driven Recommendations</div>
+      <h2 class="section-title">Actionable Strategies</h2>
+      <p class="section-desc">Nine specific recommendations, grounded in analytical findings, to address both business problems.</p>
+
+      <div class="rec-tabs">
+        <button class="rec-tab active" onclick="showTab('p1-recs', this)" id="tab-p1">🛒 Increase Basket Size</button>
+        <button class="rec-tab" onclick="showTab('p2-recs', this)" id="tab-p2">📉 Reduce Variability</button>
+      </div>
+
+      <div class="rec-panel active" id="p1-recs">
+        <div class="rec-card">
+          <div class="rec-num">REC 01 — PROBLEM 1</div>
+          <h4>🎁 Launch Data-Driven Combo Offers</h4>
+          <p>
+            Based on high lift values, introduce combos such as Coffee + Cake, Coffee + Pastry, Tea + Cake, and Bread + Pastry.
+            Price combos slightly below the combined individual price. Schedule offers primarily during morning hours when beverage purchases peak.
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 02 — PROBLEM 1</div>
+          <h4>🖥️ Implement POS-Based Upsell Prompts</h4>
+          <p>
+            Incorporate scripted prompts into the point-of-sale interface. When a customer orders Coffee, prompt staff:
+            "Would you like to add a slice of Cake for just £0.50 more?" This leverages association rules in real-time
+            to nudge customers towards multi-item purchases.
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 03 — PROBLEM 1</div>
+          <h4>🏪 Optimise Product Placement &amp; Signage</h4>
+          <p>
+            Rearrange store layout to co-locate frequently associated products. Display pastries beside coffee dispensers.
+            Use signage like "Best with Coffee" or "Perfect Pairing" to increase visual triggers for add-on purchases,
+            directly aligning with network graph findings.
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 04 — PROBLEM 1</div>
+          <h4>🎟️ Introduce Weekday Loyalty Discounts for Multi-Item Orders</h4>
+          <p>
+            Offer loyalty rewards that activate on weekday multi-item purchases: "Buy 2 items, Get 10% Off — Monday to Thursday Only."
+            Uses consistent weekday traffic to drive more value per transaction during slow sales periods.
+          </p>
+        </div>
+      </div>
+
+      <div class="rec-panel" id="p2-recs">
+        <div class="rec-card">
+          <div class="rec-num">REC 01 — PROBLEM 2</div>
+          <h4>📦 Implement Forecast-Based Inventory Planning</h4>
+          <p>
+            Use Prophet for weekly stock planning to accommodate recurring weekend surges.
+            Pair it with XGBoost for short-term day-before demand tuning.
+            Ensures adequate stock on peak days (Friday–Sunday) while minimising wastage on low-demand days (Monday–Wednesday).
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 02 — PROBLEM 2</div>
+          <h4>👥 Realign Staff Scheduling with Hourly Demand</h4>
+          <p>
+            Schedule more staff during 9 AM–2 PM on weekends when sales activity is highest.
+            Reduce staff during weekday evenings where transaction volumes are consistently low.
+            Ensures cost-effective allocation without compromising service quality during peak hours.
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 03 — PROBLEM 2</div>
+          <h4>🎲 Use Monte Carlo for Buffer Stock Decisions</h4>
+          <p>
+            Apply the upper 95th percentile from Monte Carlo simulation to define buffer stock thresholds,
+            ensuring readiness for occasional demand spikes without overproducing on stable days.
+            Mean simulated demand is ~105–110 daily sales.
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 04 — PROBLEM 2</div>
+          <h4>🕐 Adjust Operating Hours During Off-Peak Seasons</h4>
+          <p>
+            Sales data (October–April winter months) showed negligible transactions post 5 PM.
+            Consider closing earlier on weekdays during these months to reduce utility and staffing costs,
+            aligning operational hours with actual customer demand patterns.
+          </p>
+        </div>
+        <div class="rec-card">
+          <div class="rec-num">REC 05 — PROBLEM 2</div>
+          <h4>🌙 Launch Off-Peak Incentives to Smooth Demand</h4>
+          <p>
+            To reduce over-reliance on weekend peaks, launch evening deals on weekdays.
+            Targeted promotions can help redistribute demand, improve inventory flow,
+            and make better use of underutilised staff during quieter time blocks.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- FOOTER -->
+  <!-- ══════════════════════════════════════════════ -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-logo">🍞 Bakery <span>Analytics</span></div>
+      <p class="footer-sub">
+        BDM Capstone Project · Divyansh Ajay (22f3002342) · IIT Madras Online BS Degree Program<br />
+        The Bread Basket, Edinburgh, Scotland · Data: Oct 2016 – Apr 2017
+      </p>
+      <div class="footer-links">
+        <a href="https://www.kaggle.com/datasets/akashdeepkuila/bakery/data" target="_blank">Kaggle Dataset</a>
+        <a href="#home">Back to Top</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#recommendations">Recommendations</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ══════════════════════════════════════════════
+    // PLOTLY CONFIG
+    // ══════════════════════════════════════════════
+    const PLOT_CONFIG = { responsive: true, displayModeBar: false };
+
+    const darkLayout = {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { family: 'Outfit, sans-serif', color: '#94a3b8', size: 12 },
+      margin: { t: 20, b: 50, l: 50, r: 20 },
+      xaxis: {
+        gridcolor: 'rgba(255,255,255,0.05)',
+        linecolor: 'rgba(255,255,255,0.1)',
+        tickfont: { color: '#64748b' }
+      },
+      yaxis: {
+        gridcolor: 'rgba(255,255,255,0.05)',
+        linecolor: 'rgba(255,255,255,0.1)',
+        tickfont: { color: '#64748b' }
+      }
+    };
+
+    // ══════════════════════════════════════════════
+    // CHART: TOP ITEMS (from CSV)
+    // ══════════════════════════════════════════════
+    async function renderTopItems(data) {
+      const counts = d3.rollup(data, v => v.length, d => d.Item);
+      const sorted = Array.from(counts.entries()).sort((a,b) => b[1]-a[1]).slice(0,15);
+      const items = sorted.map(d => d[0]);
+      const vals  = sorted.map(d => d[1]);
+
+      const colors = items.map((_, i) => {
+        const t = i / (items.length - 1);
+        return `hsl(${25 - t * 10}, ${90 - t * 30}%, ${60 - t * 20}%)`;
+      });
+
+      const trace = {
+        type: 'bar', orientation: 'h',
+        x: vals.reverse(), y: items.reverse(),
+        marker: { color: colors.reverse(), opacity: 0.9 },
+        hovertemplate: '<b>%{y}</b><br>Count: %{x}<extra></extra>'
+      };
+
+      Plotly.newPlot('chart-top-items', [trace], {
+        ...darkLayout,
+        margin: { t: 10, b: 30, l: 90, r: 20 },
+        xaxis: { ...darkLayout.xaxis, title: 'Frequency' },
+        height: 340
+      }, PLOT_CONFIG);
+    }
+
+    // ══════════════════════════════════════════════
+    // CHART: BASKET SIZE DISTRIBUTION
+    // ══════════════════════════════════════════════
+    async function renderBasketDist(data) {
+      const txCounts = d3.rollup(data, v => v.length, d => d.Transaction);
+      const basketSizes = Array.from(txCounts.values());
+      const sizeCounts = d3.rollup(basketSizes, v => v.length, d => d);
+      const sorted = Array.from(sizeCounts.entries()).sort((a,b) => a[0]-b[0]);
+
+      const labels = sorted.map(d => `${d[0]} item${d[0]>1?'s':''}`);
+      const vals   = sorted.map(d => d[1]);
+
+      const trace = {
+        type: 'bar',
+        x: labels, y: vals,
+        marker: {
+          color: vals.map((_, i) => `hsla(${270 - i * 15}, 70%, ${55 + i * 2}%, 0.85)`)
+        },
+        hovertemplate: '<b>%{x}</b><br>Transactions: %{y}<extra></extra>'
+      };
+
+      Plotly.newPlot('chart-basket-dist', [trace], {
+        ...darkLayout,
+        height: 320,
+        xaxis: { ...darkLayout.xaxis, title: 'Basket Size' },
+        yaxis: { ...darkLayout.yaxis, title: 'Transactions' }
+      }, PLOT_CONFIG);
+    }
+
+    // ══════════════════════════════════════════════
+    // CHART: ASSOCIATIONS (horizontal bar)
+    // ══════════════════════════════════════════════
+    function renderAssociations() {
+      const pairs = [
+        { pair: 'Tea → Cake', lift: 1.60 },
+        { pair: 'Coffee → Toast', lift: 1.47 },
+        { pair: 'Coffee → Medialuna', lift: 1.19 },
+        { pair: 'Coffee → Pastry', lift: 1.15 },
+        { pair: 'Coffee → Cake', lift: 1.10 },
+        { pair: 'Coffee → Hot Chocolate', lift: 1.05 },
+        { pair: 'Coffee → Juice', lift: 0.98 },
+        { pair: 'Bread → Cake', lift: 0.69 },
+        { pair: 'Bread → Tea', lift: 0.60 },
+        { pair: 'Coffee → Bread', lift: 0.58 },
+      ];
+
+      const labels = pairs.map(d => d.pair);
+      const values = pairs.map(d => d.lift);
+      const colors = values.map(v => v >= 1.0 ? 'rgba(249,115,22,0.85)' : 'rgba(168,85,247,0.7)');
+
+      const trace = {
+        type: 'bar', orientation: 'h',
+        x: values, y: labels,
+        marker: { color: colors },
+        text: values.map(v => v.toFixed(2)),
+        textposition: 'outside',
+        textfont: { color: '#94a3b8', size: 11 },
+        hovertemplate: '<b>%{y}</b><br>Lift: %{x:.2f}<extra></extra>'
+      };
+
+      const shapeLine = {
+        type: 'line', x0: 1, x1: 1, y0: -0.5, y1: pairs.length - 0.5,
+        line: { color: 'rgba(249,115,22,0.4)', width: 1.5, dash: 'dot' }
+      };
+
+      Plotly.newPlot('chart-associations', [trace], {
+        ...darkLayout,
+        height: 340,
+        margin: { t: 10, b: 40, l: 160, r: 60 },
+        xaxis: { ...darkLayout.xaxis, title: 'Lift Score', range: [0, 1.9] },
+        shapes: [shapeLine],
+        annotations: [{
+          x: 1.02, y: pairs.length - 1,
+          text: 'Lift = 1<br>(random)', showarrow: false,
+          font: { size: 10, color: '#64748b' }, xanchor: 'left'
+        }]
+      }, PLOT_CONFIG);
+    }
+
+    // ══════════════════════════════════════════════
+    // CHART: WEEKLY SALES PATTERN
+    // ══════════════════════════════════════════════
+    function renderWeekly(data) {
+      const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      const dayMap = {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
+
+      const byCounts = d3.rollup(data, v => v.length, d => {
+        const dt = new Date(d.date_time);
+        return dayMap[dt.getDay()];
+      });
+
+      const vals = dayOrder.map(day => byCounts.get(day) || 0);
+
+      const trace = {
+        type: 'bar', x: dayOrder, y: vals,
+        marker: {
+          color: dayOrder.map((_, i) => {
+            if (i === 5) return 'rgba(249,115,22,0.9)';
+            if (i === 4 || i === 6) return 'rgba(249,115,22,0.6)';
+            return 'rgba(59,130,246,0.5)';
+          }),
+          line: { color: 'rgba(255,255,255,0.1)', width: 0.5 }
+        },
+        hovertemplate: '<b>%{x}</b><br>Items sold: %{y:,}<extra></extra>'
+      };
+
+      Plotly.newPlot('chart-weekly', [trace], {
+        ...darkLayout,
+        height: 300,
+        xaxis: { ...darkLayout.xaxis },
+        yaxis: { ...darkLayout.yaxis, title: 'Items Sold' }
+      }, PLOT_CONFIG);
+    }
+
+    // ══════════════════════════════════════════════
+    // CHART: SALES BY PERIOD
+    // ══════════════════════════════════════════════
+    function renderPeriod(data) {
+      const periodOrder = ['morning','afternoon','evening','night'];
+      const periodLabels = ['Morning', 'Afternoon', 'Evening', 'Night'];
+      const counts = d3.rollup(data, v => v.length, d => d.period_day ? d.period_day.trim().toLowerCase() : 'unknown');
+
+      const vals = periodOrder.map(p => counts.get(p) || 0);
+      const colors = ['rgba(251,191,36,0.85)', 'rgba(249,115,22,0.85)', 'rgba(168,85,247,0.7)', 'rgba(59,130,246,0.6)'];
+
+      const trace = {
+        type: 'bar', x: periodLabels, y: vals,
+        marker: { color: colors },
+        hovertemplate: '<b>%{x}</b><br>Transactions: %{y:,}<extra></extra>'
+      };
+
+      Plotly.newPlot('chart-period', [trace], {
+        ...darkLayout,
+        height: 300,
+        yaxis: { ...darkLayout.yaxis, title: 'Transactions' }
+      }, PLOT_CONFIG);
+    }
+
+    // ══════════════════════════════════════════════
+    // CHART: MONTE CARLO SIMULATION (Enhanced)
+    // ══════════════════════════════════════════════
+    function renderMonteCarlo(data) {
+      // ── Compute historical daily sales ──────────
+      const dailySales = d3.rollup(data, v => v.length, d => {
+        const dt = new Date(d.date_time);
+        return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+      });
+      const salesVals = Array.from(dailySales.values());
+      const histMean  = d3.mean(salesVals);
+      const histStd   = d3.deviation(salesVals);
+
+      // ── Box-Muller RNG ──────────────────────────
+      const rng = () => {
+        const u1 = Math.random() || 1e-10, u2 = Math.random();
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      };
+
+      const N_SIMS = 200;
+      const HORIZON = 30;
+      const dayNums = Array.from({length: HORIZON}, (_, i) => i + 1);
+      const dayLabels = dayNums.map(i => `Day ${i}`);
+
+      // ── Run simulations ─────────────────────────
+      const simPaths = Array.from({length: N_SIMS}, () =>
+        dayNums.map(() => Math.max(0, histMean + rng() * histStd))
+      );
+
+      // ── Compute percentile bands per day ────────
+      const p5  = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.05));
+      const p25 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.25));
+      const p50 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.50));
+      const p75 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.75));
+      const p95 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.95));
+
+      // ── Populate live stat strip ─────────────────
+      const globalMin  = Math.round(d3.min(p5));
+      const globalMax  = Math.round(d3.max(p95));
+      const globalMean = Math.round(d3.mean(p50));
+      const risk       = Math.round(((d3.mean(p95) - d3.mean(p50)) / d3.mean(p50)) * 100);
+      document.getElementById('mc-stat-mean').textContent = globalMean;
+      document.getElementById('mc-stat-p95').textContent  = Math.round(d3.mean(p95));
+      document.getElementById('mc-stat-min').textContent  = globalMin;
+      document.getElementById('mc-stat-risk').textContent = `+${risk}%`;
+
+      const traces = [];
+
+      // ── 50 faint individual paths ────────────────
+      for (let s = 0; s < 50; s++) {
+        traces.push({
+          type: 'scatter', mode: 'lines',
+          x: dayLabels, y: simPaths[s],
+          line: { color: 'rgba(148,163,184,0.06)', width: 1 },
+          showlegend: false, hoverinfo: 'skip'
+        });
+      }
+
+      // ── 90% confidence band (p5 → p95) ──────────
+      traces.push({
+        type: 'scatter', mode: 'lines', x: dayLabels, y: p95,
+        fill: 'tonexty', fillcolor: 'rgba(59,130,246,0.07)',
+        line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip'
+      });
+      traces.push({
+        type: 'scatter', mode: 'lines', x: dayLabels, y: p5,
+        line: { color: 'rgba(59,130,246,0.35)', width: 1, dash: 'dot' },
+        name: '5th–95th % band', showlegend: false, hoverinfo: 'skip'
+      });
+
+      // ── IQR band (p25 → p75) ────────────────────
+      traces.push({
+        type: 'scatter', mode: 'lines', x: dayLabels, y: p75,
+        fill: 'tonexty', fillcolor: 'rgba(249,115,22,0.13)',
+        line: { color: 'transparent' }, showlegend: false, hoverinfo: 'skip'
+      });
+      traces.push({
+        type: 'scatter', mode: 'lines', x: dayLabels, y: p25,
+        line: { color: 'rgba(249,115,22,0.4)', width: 1, dash: 'dot' },
+        name: '25th–75th % (IQR)', showlegend: false, hoverinfo: 'skip'
+      });
+
+      // ── P95 upper bound ──────────────────────────
+      traces.push({
+        type: 'scatter', mode: 'lines',
+        x: dayLabels, y: p95,
+        line: { color: 'rgba(168,85,247,0.8)', width: 1.8, dash: 'dash' },
+        name: 'P95 — Buffer stock threshold',
+        hovertemplate: '<b>%{x}</b><br>⚠ P95: <b>%{y:.0f}</b> items<br><i>Use for buffer stock</i><extra></extra>'
+      });
+
+      // ── Median (P50) ─────────────────────────────
+      traces.push({
+        type: 'scatter', mode: 'lines',
+        x: dayLabels, y: p50,
+        line: { color: 'rgba(249,115,22,1)', width: 3 },
+        name: 'Median forecast (P50)',
+        hovertemplate: '<b>%{x}</b><br>📍 Median: <b>%{y:.0f}</b> items<extra></extra>'
+      });
+
+      // ── Historical mean reference line ────────────
+      traces.push({
+        type: 'scatter', mode: 'lines',
+        x: [dayLabels[0], dayLabels[HORIZON-1]],
+        y: [histMean, histMean],
+        line: { color: 'rgba(34,197,94,0.7)', width: 1.5, dash: 'longdash' },
+        name: 'Historical mean',
+        hovertemplate: `Historical avg: <b>${Math.round(histMean)}</b> items/day<extra></extra>`
+      });
+
+      // ── Annotations ──────────────────────────────
+      const annotations = [
+        {
+          x: dayLabels[HORIZON - 1], y: p95[HORIZON - 1],
+          text: `⚠ P95: ${Math.round(p95[HORIZON-1])}`, showarrow: true,
+          arrowhead: 2, arrowcolor: 'rgba(168,85,247,0.8)',
+          font: { color: '#a855f7', size: 11 },
+          bgcolor: 'rgba(168,85,247,0.1)', bordercolor: 'rgba(168,85,247,0.3)',
+          borderwidth: 1, borderpad: 4, xanchor: 'right'
+        },
+        {
+          x: dayLabels[HORIZON - 1], y: p50[HORIZON - 1],
+          text: `📍 Median: ${Math.round(p50[HORIZON-1])}`, showarrow: true,
+          arrowhead: 2, arrowcolor: 'rgba(249,115,22,0.9)',
+          font: { color: '#f97316', size: 11 },
+          bgcolor: 'rgba(249,115,22,0.1)', bordercolor: 'rgba(249,115,22,0.3)',
+          borderwidth: 1, borderpad: 4, xanchor: 'right'
+        },
+        {
+          x: dayLabels[0], y: histMean + 3,
+          text: `Hist. avg: ${Math.round(histMean)}`, showarrow: false,
+          font: { color: '#22c55e', size: 10 }, xanchor: 'left'
+        }
+      ];
+
+      // ── Zone shapes ──────────────────────────────
+      const yRange = [Math.max(0, Math.round(d3.min(p5)) - 20), Math.round(d3.max(p95)) + 30];
+
+      Plotly.newPlot('chart-montecarlo', traces, {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor:  'rgba(0,0,0,0)',
+        font: { family: 'Outfit, sans-serif', color: '#94a3b8', size: 12 },
+        height: 440,
+        showlegend: false,   // custom HTML legend above chart is used instead
+        margin: { t: 40, b: 70, l: 72, r: 110 },  // r:110 gives room for right-side annotations
+        yaxis: {
+          gridcolor: 'rgba(255,255,255,0.05)',
+          linecolor: 'rgba(255,255,255,0.1)',
+          tickfont:  { color: '#64748b', size: 11 },
+          title: { text: 'Daily Sales (Items)', font: { color: '#94a3b8', size: 12 }, standoff: 16 },
+          range: yRange,
+          zeroline: false
+        },
+        xaxis: {
+          gridcolor: 'rgba(255,255,255,0.05)',
+          linecolor: 'rgba(255,255,255,0.1)',
+          tickfont:  { color: '#64748b', size: 11 },
+          title: { text: '30-Day Forecast Horizon', font: { color: '#94a3b8', size: 12 }, standoff: 14 },
+          tickmode: 'array',
+          tickvals: dayLabels.filter((_, i) => i % 4 === 0 || i === HORIZON - 1),
+          ticktext: dayLabels.filter((_, i) => i % 4 === 0 || i === HORIZON - 1)
+        },
+        annotations: [
+          {
+            // P95 callout — anchored inside the right edge, pointing left
+            x: dayLabels[HORIZON - 2], y: p95[HORIZON - 2],
+            text: `⚠ P95: ${Math.round(p95[HORIZON-2])}`,
+            showarrow: true, ax: -45, ay: -28,
+            arrowhead: 2, arrowcolor: 'rgba(168,85,247,0.8)',
+            font: { color: '#a855f7', size: 11 },
+            bgcolor: 'rgba(20,10,40,0.85)', bordercolor: 'rgba(168,85,247,0.4)',
+            borderwidth: 1, borderpad: 5, xanchor: 'center'
+          },
+          {
+            // Median callout
+            x: dayLabels[HORIZON - 2], y: p50[HORIZON - 2],
+            text: `📍 P50: ${Math.round(p50[HORIZON-2])}`,
+            showarrow: true, ax: -45, ay: 28,
+            arrowhead: 2, arrowcolor: 'rgba(249,115,22,0.9)',
+            font: { color: '#f97316', size: 11 },
+            bgcolor: 'rgba(30,15,5,0.85)', bordercolor: 'rgba(249,115,22,0.4)',
+            borderwidth: 1, borderpad: 5, xanchor: 'center'
+          },
+          {
+            // Historical mean label at start
+            x: dayLabels[1], y: histMean,
+            text: `── Hist. avg: ${Math.round(histMean)}`,
+            showarrow: false,
+            font: { color: '#22c55e', size: 10 }, xanchor: 'left',
+            yanchor: 'bottom'
+          }
+        ],
+        shapes: [
+          // Weekend highlight bands (Days 5-7, 12-14, 19-21, 26-28)
+          ...([0,1,2,3].map(w => ({
+            type: 'rect',
+            x0: dayLabels[w*7 + 4], x1: dayLabels[Math.min(w*7 + 6, HORIZON - 1)],
+            y0: yRange[0], y1: yRange[1],
+            fillcolor: 'rgba(255,255,255,0.022)',
+            line: { width: 0 },
+            layer: 'below'
+          })))
+        ]
+      }, { responsive: true, displayModeBar: false });
+    }
+
+    // ══════════════════════════════════════════════
+    // TAB SWITCHING
+    // ══════════════════════════════════════════════
+    function showTab(panelId, btn) {
+      document.querySelectorAll('.rec-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.rec-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // ══════════════════════════════════════════════
+    // GSAP ANIMATIONS
+    // ══════════════════════════════════════════════
+    function initAnimations() {
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero entrance
+      gsap.to('.hero-tag', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out', delay: 0.2 });
+      gsap.to('.hero h1', { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.4 });
+      gsap.to('.hero-desc', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out', delay: 0.6 });
+      gsap.to('.hero-cta', { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out', delay: 0.75 });
+      gsap.to('.hero-stats', { opacity: 1, duration: 0.8, ease: 'power2.out', delay: 0.95 });
+
+      // Scroll-triggered card reveals
+      gsap.utils.toArray('.problem-card, .model-card, .rec-card, .stat-card, .chart-card').forEach((el, i) => {
+        gsap.from(el, {
+          scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' },
+          opacity: 0, y: 30, duration: 0.6, delay: (i % 3) * 0.1, ease: 'power2.out'
+        });
+      });
+    }
+
+    // ══════════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════════
+    (async function init() {
+      try {
+        const data = await d3.csv('bakery_sales_revised.csv', d => ({
+          Transaction: d.Transaction,
+          Item: d.Item ? d.Item.trim() : '',
+          date_time: d.date_time,
+          period_day: d.period_day,
+          weekday_weekend: d.weekday_weekend
+        }));
+
+        await Promise.all([
+          renderTopItems(data),
+          renderBasketDist(data),
+          renderWeekly(data),
+          renderPeriod(data),
+          renderMonteCarlo(data)
+        ]);
+
+        renderAssociations();
+
+      } catch (err) {
+        console.error('Data load error:', err);
+        // Render static association chart even without CSV
+        renderAssociations();
+      }
+
+      initAnimations();
+
+      // Hide loader
+      setTimeout(() => {
+        document.getElementById('loader').classList.add('hidden');
+      }, 600);
+    })();
+  </script>
+</body>
+</html>
