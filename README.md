@@ -89,7 +89,7 @@ The result is a fully interactive, single-page analytics dashboard — built wit
 |---|---|
 | Mean | 2.16 |
 | Std Dev | 1.30 |
-| Median (P50) | 2.0 |
+| Median (P50) | 2.0 |   
 | P75 | 3.0 |
 | Max | 11 |
 
