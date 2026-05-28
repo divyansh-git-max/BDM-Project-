@@ -227,55 +227,6 @@ BDM Project files/
 │
 └── README.md                     # ← This file
 ```
-
-> **Note:** The dashboard is fully self-contained in `index.html` — all CSS, JS, and animations are inline. Only `bakery_sales_revised.csv` needs to be in the same directory for charts to render.
-
----
-
-## 💻 Running Locally
-
-### Option 1 — Python (Recommended)
-```bash
-cd "f:\BDM Project files"
-python -m http.server 8080
-```
-Then open **[http://localhost:8080](http://localhost:8080)** in your browser.
-
-### Option 2 — Node.js
-```bash
-npx serve .
-```
-
-### Option 3 — VS Code
-Install the **Live Server** extension → right-click `index.html` → **Open with Live Server**
-
-> ⚠️ **Important:** You must serve the files via a local server, not by opening `index.html` directly as a `file://` URL — the CSV fetch will be blocked by CORS otherwise.
-
----
-
-## 🚀 Deploying to Vercel
-
-This project is configured for **free static deployment on Vercel**.
-
-### Step 1 — Push to GitHub
-```bash
-git remote add origin https://github.com/YOUR_USERNAME/bakery-bdm.git
-git branch -M main
-git push -u origin main
-```
-
-### Step 2 — Import to Vercel
-1. Go to **[vercel.com](https://vercel.com)** and sign up free (use GitHub)
-2. Click **"Add New Project"** → Import your repository
-3. Vercel auto-detects it as a **static site** — no config needed
-4. Click **Deploy** → live in ~30 seconds ✅
-
-### Step 3 — Your URL
-```
-https://bakery-bdm.vercel.app
-```
-Every `git push` to `main` **auto-redeploys** instantly.
-
 ---
 
 ## 👤 Author
