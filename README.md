@@ -11,7 +11,7 @@
 
 *A data-driven analytics dashboard built as part of the IIT Madras Online BS Degree — Business Decision Making (BDM) Capstone Project*
 
-[🌐 Live Demo](#) · [📊 Dataset](https://www.kaggle.com/datasets/akashdeepkuila/bakery/data) · [📄 Report](./22f3002342_BDM_FINAL.pdf) · [📓 Notebook](./IITM_BDM_PROJECT.ipynb)
+[🌐 Live Demo](#) · [📊 Dataset](https://www.kaggle.com/datasets/akashdeepkuila/bakery/data) · [📄 Report](./BDM_FINAL.pdf) · [📓 Notebook](./IITM_BDM_PROJECT.ipynb)
 
 </div>
 
@@ -218,7 +218,7 @@ BDM Project files/
 ├── vercel.json                   # ← Vercel deployment config
 │
 ├── IITM_BDM_PROJECT.ipynb        # ← Full analysis notebook
-├── 22f3002342_BDM_FINAL.pdf      # ← Final BDM report
+├── BDM_FINAL.pdf                 # ← Final BDM report
 ├── pdf_text.txt                  # ← Extracted report text
 │
 ├── extract_pdf.py                # ← PDF text extraction script
@@ -281,8 +281,6 @@ Every `git push` to `main` **auto-redeploys** instantly.
 ## 👤 Author
 
 **Divyansh Ajay**
-- 🎓 Student Email: `22f3002342@ds.study.iitm.ac.in`
-- 🆔 Roll No: `22f3002342`
 - 🏛️ IIT Madras — Online BS Degree Program
 - 📍 Indian Institute of Technology, Madras, Chennai — 600036
 

@@ -602,7 +602,7 @@
   <!-- ══════════════════════════════════════════════ -->
   <section class="hero" id="home">
     <div class="hero-content">
-      <div class="hero-tag">IIT Madras · BDM Capstone Project · 22f3002342</div>
+      <div class="hero-tag">IIT Madras · BDM Capstone Project</div>
 
       <h1>
         Optimizing <span class="accent-text">Customer Purchases</span><br />
@@ -1154,7 +1154,7 @@
     <div class="footer-content">
       <div class="footer-logo">🍞 Bakery <span>Analytics</span></div>
       <p class="footer-sub">
-        BDM Capstone Project · Divyansh Ajay (22f3002342) · IIT Madras Online BS Degree Program<br />
+        BDM Capstone Project · Divyansh Ajay · IIT Madras Online BS Degree Program<br />
         The Bread Basket, Edinburgh, Scotland · Data: Oct 2016 – Apr 2017
       </p>
       <div class="footer-links">
@@ -1595,37 +1595,209 @@
     }
 
     // ══════════════════════════════════════════════
-    // INIT
+    // HARDCODED FALLBACK DATA (from BDM Report PDF)
+    // Used when CSV fetch fails (e.g. on Vercel cold start)
+    // ══════════════════════════════════════════════
+    function renderTopItemsFallback() {
+      const items  = ['Coffee','Bread','Tea','Cake','Pastry','Sandwich','Medialuna','Hot chocolate','Tart','Brownie','Cookies','Muffin','Juice','Coffee granules','Alfajores'];
+      const counts = [5471, 3325, 1435, 1025, 816, 771, 616, 590, 452, 379, 365, 365, 208, 186, 166];
+      const colors = items.map((_, i) => {
+        const t = i / (items.length - 1);
+        return `hsl(${25 - t * 10}, ${90 - t * 30}%, ${60 - t * 20}%)`;
+      });
+      Plotly.newPlot('chart-top-items', [{
+        type: 'bar', orientation: 'h',
+        x: counts, y: items,
+        marker: { color: colors, opacity: 0.9 },
+        hovertemplate: '<b>%{y}</b><br>Count: %{x}<extra></extra>'
+      }], {
+        ...darkLayout,
+        margin: { t: 10, b: 30, l: 120, r: 20 },
+        xaxis: { ...darkLayout.xaxis, title: 'Frequency' },
+        height: 340
+      }, PLOT_CONFIG);
+    }
+
+    function renderBasketDistFallback() {
+      const labels = ['1 item','2 items','3 items','4 items','5 items','6 items','7 items','8+ items'];
+      const vals   = [3352, 2803, 1560, 734, 333, 134, 45, 24];
+      Plotly.newPlot('chart-basket-dist', [{
+        type: 'bar', x: labels, y: vals,
+        marker: { color: vals.map((_, i) => `hsla(${270 - i * 15}, 70%, ${55 + i * 2}%, 0.85)`) },
+        hovertemplate: '<b>%{x}</b><br>Transactions: %{y}<extra></extra>'
+      }], {
+        ...darkLayout, height: 320,
+        xaxis: { ...darkLayout.xaxis, title: 'Basket Size' },
+        yaxis: { ...darkLayout.yaxis, title: 'Transactions' }
+      }, PLOT_CONFIG);
+    }
+
+    function renderWeeklyFallback() {
+      const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      const vals = [2392, 2200, 2280, 2514, 2932, 4158, 3031];
+      Plotly.newPlot('chart-weekly', [{
+        type: 'bar', x: days, y: vals,
+        marker: {
+          color: days.map((_, i) => {
+            if (i === 5) return 'rgba(249,115,22,0.9)';
+            if (i === 4 || i === 6) return 'rgba(249,115,22,0.6)';
+            return 'rgba(59,130,246,0.5)';
+          }),
+          line: { color: 'rgba(255,255,255,0.1)', width: 0.5 }
+        },
+        hovertemplate: '<b>%{x}</b><br>Items sold: %{y:,}<extra></extra>'
+      }], {
+        ...darkLayout, height: 300,
+        yaxis: { ...darkLayout.yaxis, title: 'Items Sold' }
+      }, PLOT_CONFIG);
+    }
+
+    function renderPeriodFallback() {
+      const labels = ['Morning','Afternoon','Evening','Night'];
+      const vals   = [6125, 11569, 2272, 541];
+      const colors = ['rgba(251,191,36,0.85)','rgba(249,115,22,0.85)','rgba(168,85,247,0.7)','rgba(59,130,246,0.6)'];
+      Plotly.newPlot('chart-period', [{
+        type: 'bar', x: labels, y: vals,
+        marker: { color: colors },
+        hovertemplate: '<b>%{x}</b><br>Transactions: %{y:,}<extra></extra>'
+      }], {
+        ...darkLayout, height: 300,
+        yaxis: { ...darkLayout.yaxis, title: 'Transactions' }
+      }, PLOT_CONFIG);
+    }
+
+    function renderMonteCarloFallback() {
+      // Use known historical stats from report: mean ~126 items/day, std ~38
+      const histMean = 126, histStd = 38;
+      const rng = () => {
+        const u1 = Math.random() || 1e-10, u2 = Math.random();
+        return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      };
+      const N_SIMS = 200, HORIZON = 30;
+      const dayNums = Array.from({length: HORIZON}, (_, i) => i + 1);
+      const dayLabels = dayNums.map(i => `Day ${i}`);
+      const simPaths = Array.from({length: N_SIMS}, () =>
+        dayNums.map(() => Math.max(0, histMean + rng() * histStd))
+      );
+      const p5  = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.05));
+      const p25 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.25));
+      const p50 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.50));
+      const p75 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.75));
+      const p95 = dayNums.map((_, i) => d3.quantile(simPaths.map(p => p[i]).sort(d3.ascending), 0.95));
+
+      const risk = Math.round(((d3.mean(p95) - d3.mean(p50)) / d3.mean(p50)) * 100);
+      document.getElementById('mc-stat-mean').textContent = Math.round(d3.mean(p50));
+      document.getElementById('mc-stat-p95').textContent  = Math.round(d3.mean(p95));
+      document.getElementById('mc-stat-min').textContent  = Math.round(d3.min(p5));
+      document.getElementById('mc-stat-risk').textContent = `+${risk}%`;
+
+      const traces = [];
+      for (let s = 0; s < 50; s++) {
+        traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:simPaths[s],
+          line:{color:'rgba(148,163,184,0.06)',width:1}, showlegend:false, hoverinfo:'skip' });
+      }
+      traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:p95,
+        fill:'tonexty', fillcolor:'rgba(59,130,246,0.07)', line:{color:'transparent'}, showlegend:false, hoverinfo:'skip' });
+      traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:p5,
+        line:{color:'rgba(59,130,246,0.35)',width:1,dash:'dot'}, showlegend:false, hoverinfo:'skip' });
+      traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:p75,
+        fill:'tonexty', fillcolor:'rgba(249,115,22,0.13)', line:{color:'transparent'}, showlegend:false, hoverinfo:'skip' });
+      traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:p25,
+        line:{color:'rgba(249,115,22,0.4)',width:1,dash:'dot'}, showlegend:false, hoverinfo:'skip' });
+      traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:p95,
+        line:{color:'rgba(168,85,247,0.8)',width:1.8,dash:'dash'}, name:'P95 — Buffer stock threshold',
+        hovertemplate:'<b>%{x}</b><br>⚠ P95: <b>%{y:.0f}</b> items<extra></extra>' });
+      traces.push({ type:'scatter', mode:'lines', x:dayLabels, y:p50,
+        line:{color:'rgba(249,115,22,1)',width:3}, name:'Median forecast (P50)',
+        hovertemplate:'<b>%{x}</b><br>📍 Median: <b>%{y:.0f}</b> items<extra></extra>' });
+      traces.push({ type:'scatter', mode:'lines',
+        x:[dayLabels[0],dayLabels[HORIZON-1]], y:[histMean,histMean],
+        line:{color:'rgba(34,197,94,0.7)',width:1.5,dash:'longdash'}, name:'Historical mean',
+        hovertemplate:`Historical avg: <b>${histMean}</b> items/day<extra></extra>` });
+
+      const yRange = [Math.max(0, Math.round(d3.min(p5)) - 20), Math.round(d3.max(p95)) + 30];
+      Plotly.newPlot('chart-montecarlo', traces, {
+        paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+        font:{family:'Outfit, sans-serif',color:'#94a3b8',size:12},
+        height:440, showlegend:false,
+        margin:{t:40,b:70,l:72,r:110},
+        yaxis:{ gridcolor:'rgba(255,255,255,0.05)',linecolor:'rgba(255,255,255,0.1)',tickfont:{color:'#64748b',size:11},
+          title:{text:'Daily Sales (Items)',font:{color:'#94a3b8',size:12},standoff:16},range:yRange,zeroline:false },
+        xaxis:{ gridcolor:'rgba(255,255,255,0.05)',linecolor:'rgba(255,255,255,0.1)',tickfont:{color:'#64748b',size:11},
+          title:{text:'30-Day Forecast Horizon',font:{color:'#94a3b8',size:12},standoff:14},
+          tickmode:'array',
+          tickvals:dayLabels.filter((_,i)=>i%4===0||i===HORIZON-1),
+          ticktext:dayLabels.filter((_,i)=>i%4===0||i===HORIZON-1) },
+        annotations:[
+          { x:dayLabels[HORIZON-2], y:p95[HORIZON-2], text:`⚠ P95: ${Math.round(p95[HORIZON-2])}`,
+            showarrow:true, ax:-45, ay:-28, arrowhead:2, arrowcolor:'rgba(168,85,247,0.8)',
+            font:{color:'#a855f7',size:11}, bgcolor:'rgba(20,10,40,0.85)', bordercolor:'rgba(168,85,247,0.4)',
+            borderwidth:1, borderpad:5, xanchor:'center' },
+          { x:dayLabels[HORIZON-2], y:p50[HORIZON-2], text:`📍 P50: ${Math.round(p50[HORIZON-2])}`,
+            showarrow:true, ax:-45, ay:28, arrowhead:2, arrowcolor:'rgba(249,115,22,0.9)',
+            font:{color:'#f97316',size:11}, bgcolor:'rgba(30,15,5,0.85)', bordercolor:'rgba(249,115,22,0.4)',
+            borderwidth:1, borderpad:5, xanchor:'center' }
+        ],
+        shapes:[...([0,1,2,3].map(w=>({
+          type:'rect', x0:dayLabels[w*7+4], x1:dayLabels[Math.min(w*7+6,HORIZON-1)],
+          y0:yRange[0], y1:yRange[1], fillcolor:'rgba(255,255,255,0.022)', line:{width:0}, layer:'below'
+        })))]
+      }, {responsive:true, displayModeBar:false});
+    }
+
+    // ══════════════════════════════════════════════
+    // INIT — Try CSV first, fall back to hardcoded data
     // ══════════════════════════════════════════════
     (async function init() {
+      let csvLoaded = false;
+
       try {
-        const data = await d3.csv('bakery_sales_revised.csv', d => ({
-          Transaction: d.Transaction,
-          Item: d.Item ? d.Item.trim() : '',
-          date_time: d.date_time,
-          period_day: d.period_day,
-          weekday_weekend: d.weekday_weekend
+        // 5-second timeout on fetch so we don't hang forever
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch('bakery_sales_revised.csv', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const text = await response.text();
+        const data = d3.csvParse(text, d => ({
+          Transaction:       d.Transaction,
+          Item:              d.Item ? d.Item.trim() : '',
+          date_time:         d.date_time,
+          period_day:        d.period_day,
+          weekday_weekend:   d.weekday_weekend
         }));
 
-        await Promise.all([
-          renderTopItems(data),
-          renderBasketDist(data),
-          renderWeekly(data),
-          renderPeriod(data),
-          renderMonteCarlo(data)
-        ]);
-
-        renderAssociations();
-
+        if (data.length > 100) {
+          await Promise.all([
+            renderTopItems(data),
+            renderBasketDist(data),
+            renderWeekly(data),
+            renderPeriod(data),
+            renderMonteCarlo(data)
+          ]);
+          csvLoaded = true;
+        }
       } catch (err) {
-        console.error('Data load error:', err);
-        // Render static association chart even without CSV
-        renderAssociations();
+        console.warn('CSV not available, using hardcoded report data:', err.message);
       }
+
+      // If CSV failed or returned no data — use hardcoded fallback
+      if (!csvLoaded) {
+        renderTopItemsFallback();
+        renderBasketDistFallback();
+        renderWeeklyFallback();
+        renderPeriodFallback();
+        renderMonteCarloFallback();
+      }
+
+      // Association chart is always static
+      renderAssociations();
 
       initAnimations();
 
-      // Hide loader
       setTimeout(() => {
         document.getElementById('loader').classList.add('hidden');
       }, 600);
